@@ -40,6 +40,10 @@ def create_fieldset(startdate, enddate):
 
     copernicus_kwargs = (
         dict(
+            minimum_longitude=-5,
+            maximum_longitude=10,
+            minimum_latitude=45,
+            maximum_latitude=58,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
             minimum_depth=0.5,
