@@ -55,13 +55,21 @@ def run_sim(beach_date, beach_lat, beach_lon, beach_id):
 
     def AdvectionRK2_withunbeaching(particles, fieldset):  # pragma: no cover
         """Advection of particles using second-order Runge-Kutta integration."""
-        (u1, v1) = fieldset.UV[particles]
-        x1, y1 = (particles.x + u1 * 0.5 * particles.dt, particles.y + v1 * 0.5 * particles.dt)
-        (u2, v2) = fieldset.UV[particles.t + 0.5 * particles.dt, particles.z, y1, x1, particles]
+        particles.temperature = fieldset.thetao[particles]
 
-        uab, vab = fieldset.UVab[particles.t + 0.5 * particles.dt, particles.z, y1, x1, particles]
-        particles.dx += (u2 - uab) * particles.dt
-        particles.dy += (v2 - vab) * particles.dt
+        (u1, v1) = fieldset.UV[particles]
+        (uw1, vw1) = fieldset.UVWind[particles]
+        (us1, vs1) = fieldset.UVStokes[particles]
+        x1 = particles.x + (u1 + uw1 * fieldset.wind_coeff + us1) * 0.5 * particles.dt
+        y1 = particles.y + (v1 + vw1 * fieldset.wind_coeff + vs1) * 0.5 * particles.dt
+
+        (u2, v2) = fieldset.UV[particles.t + 0.5 * particles.dt, particles.z, y1, x1, particles]
+        (uw2, vw2) = fieldset.UVWind[particles.t + 0.5 * particles.dt, particles.z, y1, x1, particles]
+        (us2, vs2) = fieldset.UVStokes[particles.t + 0.5 * particles.dt, particles.z, y1, x1, particles]
+
+        uab, vab = fieldset.UV_antibeaching[particles.t + 0.5 * particles.dt, particles.z, y1, x1, particles]
+        particles.dx += (u2 + uw2 * fieldset.wind_coeff + us2 - uab) * particles.dt
+        particles.dy += (v2 + vw2 * fieldset.wind_coeff + vs2 - vab) * particles.dt
 
     kernels = [
         # Stranding,

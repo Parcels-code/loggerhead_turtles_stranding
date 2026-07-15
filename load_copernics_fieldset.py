@@ -34,6 +34,19 @@ def create_fieldset(startdate, enddate):
             "physics",
             [
                 ("cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT1H-i", ("uo", "vo")), # TODO use cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT15M-i
+                ("cmems_mod_nws_phy-sst_anfc_1.5km-2D_PT1H-i", ("thetao",)),
+            ],
+        ),
+        (
+            "waves",
+            [
+                ("MetO-NWS-WAV-RAN", ("VSDX", "VSDY")),
+            ],
+        ),
+        (
+            "wind",
+            [
+                ("cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H", ("northward_wind", "eastward_wind")),
             ],
         ),
     ]
@@ -42,7 +55,7 @@ def create_fieldset(startdate, enddate):
         dict(
             minimum_longitude=-5,
             maximum_longitude=10,
-            minimum_latitude=45,
+            minimum_latitude=48,
             maximum_latitude=58,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
@@ -65,16 +78,20 @@ def create_fieldset(startdate, enddate):
                 datasets_list[i] = datasets_list[i].expand_dims(
                     dim={"depth": [0]}, axis=1
                 )
-        if name == "physics":
-            ds_ab = xr.open_dataset("/home/evansebill/loggerhead_turtles_stranding/anti_beaching_NWES_Met.nc")
-            ds_ab = ds_ab.rename({"lon": "longitude", "lat": "latitude", "dispU": "Uab", "dispV": "Vab"})
-            datasets_list.append(ds_ab)
         ds = xr.merge(datasets_list)
 
-        # TODO Should this processing go to copernicusmarine_to_sgrid?
-        ds = ds.rename({"uo": "U", "vo": "V"})
-        ds["U"] = ds["U"].fillna(0)
-        ds["V"] = ds["V"].fillna(0)
+        if "uo" in ds.data_vars and "vo" in ds.data_vars:
+            ds = ds.rename({"uo": "U", "vo": "V"})
+            vector_fields = {"UV": ("U", "V")}
+        elif "northward_wind" in ds.data_vars and "eastward_wind" in ds.data_vars:
+            vector_fields = {"UVWind": ("northward_wind", "eastward_wind")}
+        elif "VSDX" in ds.data_vars and "VSDY" in ds.data_vars:
+            vector_fields = {"UVStokes": ("VSDX", "VSDY")}
+        else:
+            vector_fields = {}
+
+        for var in ds.data_vars:
+            ds[var] = ds[var].fillna(0)
 
         datasets[name] = parcels.convert.copernicusmarine_to_sgrid(
             fields={name: da for name, da in ds.data_vars.items()}
@@ -82,14 +99,28 @@ def create_fieldset(startdate, enddate):
         fset.append(
             parcels.FieldSet.from_sgrid_conventions(
                 datasets[name],
-                vector_fields={"UV": ("U", "V"), "UVab": ("Uab", "Vab")}
+                vector_fields=vector_fields
             )
         )
+
+    ds_antibeaching = xr.open_dataset("/home/evansebill/loggerhead_turtles_stranding/anti_beaching_NWES_Met.nc")
+    ds_antibeaching = ds_antibeaching.rename({"dispU": "U_antibeaching", "dispV": "V_antibeaching"})
+    ds_antibeaching["lon"].attrs["units"] = "degrees_east"
+    ds_antibeaching["lat"].attrs["units"] = "degrees_north"
+
+    ds = parcels.convert.copernicusmarine_to_sgrid(
+        fields={
+            "U_antibeaching": ds_antibeaching["U_antibeaching"],
+            "V_antibeaching": ds_antibeaching["V_antibeaching"]}
+    )
+    fset_ab = parcels.FieldSet.from_sgrid_conventions(ds, vector_fields={"UV_antibeaching": ("U_antibeaching", "V_antibeaching")})
+    fset.append(fset_ab)
 
     fieldset = fset[0]
     for f in fset[1:]:
         fieldset += f
 
     fieldset.to_windowed_arrays()
+    fieldset.describe()
 
     return fieldset
