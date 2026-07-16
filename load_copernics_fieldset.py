@@ -96,12 +96,36 @@ def create_fieldset(startdate, enddate):
         datasets[name] = parcels.convert.copernicusmarine_to_sgrid(
             fields={name: da for name, da in ds.data_vars.items()}
         )
+
+### NOTE CODE BELOW IS BECAUSE STREAMING FROM COPERNICUSMARINE IS VERY SLOW (2 HRS instead of 2 minutes for a simulation).
+### CAN BE REMOVED WHEN STREAMING IS FAST AGAIN
+        datasets[name].to_netcdf(f"copernicus_{name}_{start_ymd}_{end_ymd}.nc")
+
+    for name in datasets.keys():
+        ds = xr.open_dataset(f"copernicus_{name}_{start_ymd}_{end_ymd}.nc")
+        if name == "physics":
+            vector_fields = {"UV": ("U", "V")}
+        elif name == "waves":
+            vector_fields = {"UVStokes": ("VSDX", "VSDY")}
+        elif name == "wind":
+            vector_fields = {"UVWind": ("northward_wind", "eastward_wind")}
+        else:
+            vector_fields = {}
         fset.append(
             parcels.FieldSet.from_sgrid_conventions(
-                datasets[name],
+                ds,
                 vector_fields=vector_fields
             )
         )
+### REPLACE WITH CODE BELOW
+
+        # fset.append(
+        #     parcels.FieldSet.from_sgrid_conventions(
+        #         datasets[name],
+        #         vector_fields=vector_fields
+        #     )
+        # )
+### END NOTE
 
     ds_antibeaching = xr.open_dataset("/home/evansebill/loggerhead_turtles_stranding/anti_beaching_NWES_Met.nc")
     ds_antibeaching = ds_antibeaching.rename({"dispU": "U_antibeaching", "dispV": "V_antibeaching"})
