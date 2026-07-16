@@ -53,10 +53,10 @@ def create_fieldset(startdate, enddate):
 
     copernicus_kwargs = (
         dict(
-            minimum_longitude=-5,
-            maximum_longitude=10,
-            minimum_latitude=48,
-            maximum_latitude=58,
+            minimum_longitude=-1,
+            maximum_longitude=7,
+            minimum_latitude=50,
+            maximum_latitude=55,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
             minimum_depth=0.5,
@@ -107,6 +107,7 @@ def create_fieldset(startdate, enddate):
     ds_antibeaching = ds_antibeaching.rename({"dispU": "U_antibeaching", "dispV": "V_antibeaching"})
     ds_antibeaching["lon"].attrs["units"] = "degrees_east"
     ds_antibeaching["lat"].attrs["units"] = "degrees_north"
+    ds_antibeaching.load()
 
     ds = parcels.convert.copernicusmarine_to_sgrid(
         fields={
