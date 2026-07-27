@@ -77,7 +77,7 @@ def run_sim(beach_date, beach_lat, beach_lon, beach_id):
         mode="w",
     )
 
-    tempvar = parcels.Variable('temperature', initial=np.nan),
+    tempvar = parcels.Variable('temperature', initial=np.nan)
     LoggerheadParticle = parcels.Particle.add_variable([tempvar])
 
     pset = parcels.ParticleSet(
