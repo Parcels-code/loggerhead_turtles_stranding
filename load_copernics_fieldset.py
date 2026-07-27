@@ -26,14 +26,13 @@ def create_fieldset(startdate, enddate):
         (
             "physics",
             [
-                ("cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT15M-i", ("uo", "vo")),
-                ("cmems_mod_nws_phy-sst_anfc_1.5km-2D_PT1H-i", ("thetao",)),
+                ("cmems_mod_glo_phy_my_0.083deg_P1D-m", ("uo", "vo", "thetao",)),
             ],
         ),
         (
             "waves",
             [
-                ("MetO-NWS-WAV-RAN", ("VSDX", "VSDY")),
+                ("cmems_mod_glo_wav_my_0.2deg_PT3H-i", ("VSDX", "VSDY")),
             ],
         ),
         (
@@ -46,10 +45,10 @@ def create_fieldset(startdate, enddate):
 
     copernicus_kwargs = (
         dict(
-            minimum_longitude=-5,
-            maximum_longitude=8,
-            minimum_latitude=50,
-            maximum_latitude=55,
+            minimum_longitude=-20,
+            maximum_longitude=10,
+            minimum_latitude=40,
+            maximum_latitude=65,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
             minimum_depth=0.5,
@@ -61,7 +60,6 @@ def create_fieldset(startdate, enddate):
     fset = []
     for name, grid_datasets in DATASET_IDs_BY_GRID:
         datasets[name] = {}
-        copernicusmarine.login()
         datasets_list = [
             copernicusmarine.open_dataset(id_, **copernicus_kwargs)[list(used_vars)]
             for id_, used_vars in grid_datasets
@@ -121,25 +119,10 @@ def create_fieldset(startdate, enddate):
         # )
 ### END NOTE
 
-    ds_antibeaching = xr.open_dataset("/home/evansebill/loggerhead_turtles_stranding/anti_beaching_NWES_Met.nc")
-    ds_antibeaching = ds_antibeaching.rename({"dispU": "U_antibeaching", "dispV": "V_antibeaching"})
-    ds_antibeaching["lon"].attrs["units"] = "degrees_east"
-    ds_antibeaching["lat"].attrs["units"] = "degrees_north"
-    ds_antibeaching.load()
-
-    ds = parcels.convert.copernicusmarine_to_sgrid(
-        fields={
-            "U_antibeaching": ds_antibeaching["U_antibeaching"],
-            "V_antibeaching": ds_antibeaching["V_antibeaching"]}
-    )
-    fset_ab = parcels.FieldSet.from_sgrid_conventions(ds, vector_fields={"UV_antibeaching": ("U_antibeaching", "V_antibeaching")})
-    fset.append(fset_ab)
-
     fieldset = fset[0]
     for f in fset[1:]:
         fieldset += f
 
     fieldset.to_windowed_arrays()
-    fieldset.describe()
 
     return fieldset
