@@ -22,18 +22,11 @@ def create_fieldset(startdate, enddate):
     start_ymd = np.datetime_as_string(startdate, unit="D").replace("-", "")
     end_ymd = np.datetime_as_string(enddate, unit="D").replace("-", "")
 
-    DATASET_IDs = [
-        "cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT1H-i", # TODO use cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT15M-i
-    #     # "cmems_mod_nws_phy-sst_anfc_1.5km-2D_PT1H-i",
-    #     # "cmems_mod_nws_wav_anfc_1.5km_PT1H-i",
-    #     # "cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H",
-    ]
-
     DATASET_IDs_BY_GRID: list[tuple[str, Grid]] = [
         (
             "physics",
             [
-                ("cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT1H-i", ("uo", "vo")), # TODO use cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT15M-i
+                ("cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT15M-i", ("uo", "vo")),
                 ("cmems_mod_nws_phy-sst_anfc_1.5km-2D_PT1H-i", ("thetao",)),
             ],
         ),
@@ -53,8 +46,8 @@ def create_fieldset(startdate, enddate):
 
     copernicus_kwargs = (
         dict(
-            minimum_longitude=-1,
-            maximum_longitude=7,
+            minimum_longitude=-5,
+            maximum_longitude=8,
             minimum_latitude=50,
             maximum_latitude=55,
             start_datetime=start_datetime,
@@ -67,6 +60,7 @@ def create_fieldset(startdate, enddate):
     datasets = {}
     fset = []
     for name, grid_datasets in DATASET_IDs_BY_GRID:
+        datasets[name] = {}
         copernicusmarine.login()
         datasets_list = [
             copernicusmarine.open_dataset(id_, **copernicus_kwargs)[list(used_vars)]
@@ -99,10 +93,10 @@ def create_fieldset(startdate, enddate):
 
 ### NOTE CODE BELOW IS BECAUSE STREAMING FROM COPERNICUSMARINE IS VERY SLOW (2 HRS instead of 2 minutes for a simulation).
 ### CAN BE REMOVED WHEN STREAMING IS FAST AGAIN
-        datasets[name].to_netcdf(f"copernicus_{name}_{start_ymd}_{end_ymd}.nc")
+        datasets[name].to_netcdf(f"copernicus_{name}.nc", mode="w")
 
     for name in datasets.keys():
-        ds = xr.open_dataset(f"copernicus_{name}_{start_ymd}_{end_ymd}.nc")
+        ds = xr.open_dataset(f"copernicus_{name}.nc")
         if name == "physics":
             vector_fields = {"UV": ("U", "V")}
         elif name == "waves":
