@@ -57,7 +57,7 @@ def AdvectionRK2_withunbeaching(particles, fieldset):  # pragma: no cover
 
 
 def run_sim(beach_date, beach_lat, beach_lon, beach_id):
-    runtime = datetime.timedelta(days=120)
+    runtime = datetime.timedelta(days=90)
 
     fieldset = load_copernics_fieldset.create_fieldset(startdate=beach_date-runtime, enddate=beach_date)
 
@@ -68,6 +68,9 @@ def run_sim(beach_date, beach_lat, beach_lon, beach_id):
     fieldset.wind_coeff = 0.01
 
     N = 100
+    if beach_id == "CC31":
+        beach_lat += 0.2  # offset Haringvliet stranding location to avoid land
+
     lons = beach_lon + np.random.uniform(-0.08, 0.08, size=N)
     lats = beach_lat + np.random.uniform(-0.08, 0.08, size=N)
 
@@ -87,11 +90,10 @@ def run_sim(beach_date, beach_lat, beach_lon, beach_id):
         y=lats,
         t=np.datetime64(beach_date),
     )
-
-    kernels = [AdvectionRK2_withunbeaching]
+    pset.temperature = fieldset.thetao[pset.t, pset.z, pset.y, pset.x]
 
     pset.execute(
-        kernels=kernels,
+        kernels=AdvectionRK2_withunbeaching,
         runtime=runtime,
         dt=-np.timedelta64(10, 'm'),
         output_file=pfile,
