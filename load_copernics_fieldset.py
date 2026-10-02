@@ -61,7 +61,7 @@ def create_fieldset(startdate, enddate):
     for name, grid_datasets in DATASET_IDs_BY_GRID:
         datasets[name] = {}
         datasets_list = [
-            copernicusmarine.open_dataset(id_, **copernicus_kwargs)[list(used_vars)]
+            copernicusmarine.open_dataset(id_, **copernicus_kwargs, variables=list(used_vars))
             for id_, used_vars in grid_datasets
         ]
         # TODO Should this processing go to copernicusmarine_to_sgrid?
