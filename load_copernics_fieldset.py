@@ -1,13 +1,7 @@
-import os
-import psutil
-
 import copernicusmarine
 import parcels
 import xarray as xr
 import numpy as np
-
-import zarr
-from zarr.experimental.cache_store import CacheStore
 
 ModelId = str
 UsedFields = tuple[str, ...]
@@ -19,8 +13,6 @@ def create_fieldset(startdate, enddate):
     enddate = np.datetime64(enddate)
     start_datetime = np.datetime_as_string(startdate, unit="s")
     end_datetime = np.datetime_as_string(enddate, unit="s")
-    start_ymd = np.datetime_as_string(startdate, unit="D").replace("-", "")
-    end_ymd = np.datetime_as_string(enddate, unit="D").replace("-", "")
 
     DATASET_IDs_BY_GRID: list[tuple[str, Grid]] = [
         (
@@ -64,12 +56,6 @@ def create_fieldset(startdate, enddate):
             copernicusmarine.open_dataset(id_, **copernicus_kwargs, variables=list(used_vars))
             for id_, used_vars in grid_datasets
         ]
-        # TODO Should this processing go to copernicusmarine_to_sgrid?
-        for i in range(len(datasets_list)):
-            if "depth" not in datasets_list[i].dims:
-                datasets_list[i] = datasets_list[i].expand_dims(
-                    dim={"depth": [0]}, axis=1
-                )
         ds = xr.merge(datasets_list)
 
         if "uo" in ds.data_vars and "vo" in ds.data_vars:
@@ -123,6 +109,6 @@ def create_fieldset(startdate, enddate):
     for f in fset[1:]:
         fieldset += f
 
-    fieldset.to_windowed_arrays()
+    fieldset.to_chunk_cached_arrays()
 
     return fieldset
