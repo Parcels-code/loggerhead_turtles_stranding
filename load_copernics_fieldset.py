@@ -7,6 +7,8 @@ ModelId = str
 UsedFields = tuple[str, ...]
 Grid = list[tuple[ModelId, UsedFields]]
 
+DIR = "/project/parcels/Data/TMP"
+
 def create_fieldset(startdate, enddate):
 
     startdate = np.datetime64(startdate)
@@ -37,9 +39,9 @@ def create_fieldset(startdate, enddate):
 
     copernicus_kwargs = (
         dict(
-            minimum_longitude=-20,
+            minimum_longitude=-80,
             maximum_longitude=10,
-            minimum_latitude=40,
+            minimum_latitude=10,
             maximum_latitude=65,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
@@ -77,10 +79,10 @@ def create_fieldset(startdate, enddate):
 
 ### NOTE CODE BELOW IS BECAUSE STREAMING FROM COPERNICUSMARINE IS VERY SLOW (2 HRS instead of 2 minutes for a simulation).
 ### CAN BE REMOVED WHEN STREAMING IS FAST AGAIN
-        datasets[name].to_netcdf(f"copernicus_{name}.nc", mode="w")
+        datasets[name].to_netcdf(f"{DIR}/copernicus_{name}.nc", mode="w")
 
     for name in datasets.keys():
-        ds = xr.open_dataset(f"copernicus_{name}.nc")
+        ds = xr.open_dataset(f"{DIR}/copernicus_{name}.nc")
         if name == "physics":
             vector_fields = {"UV": ("U", "V")}
         elif name == "waves":

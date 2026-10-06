@@ -57,7 +57,7 @@ def AdvectionRK2_withunbeaching(particles, fieldset):  # pragma: no cover
 
 
 def run_sim(beach_date, beach_lat, beach_lon, beach_id):
-    runtime = datetime.timedelta(days=90)
+    runtime = datetime.timedelta(days=180)
 
     fieldset = load_copernics_fieldset.create_fieldset(startdate=beach_date-runtime, enddate=beach_date)
 
